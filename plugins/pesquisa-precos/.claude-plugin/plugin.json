@@ -1,7 +1,7 @@
 {
   "name": "pesquisa-precos",
   "displayName": "Pesquisa de Preços – Essencial",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "Pesquisa de preços de contratações públicas (IN SEGES/ME nº 65/2021, art. 5º, II) com os dados abertos do Compras.gov.br e relatório pronto para os autos. Edição Essencial: até 5 itens por pesquisa.",
   "author": {
     "name": "Grupo Esteves & Esteves",

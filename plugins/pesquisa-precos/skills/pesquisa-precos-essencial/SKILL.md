@@ -36,21 +36,23 @@ Com `SEM_ACESSO_API`, siga a seção "Acesso de rede" de `references/fontes.md`,
 node <skill>/scripts/pesquisar.js --entrada entrada.json --saida pesquisa-<processo-ou-data>
 ```
 
+Cada rodada para de iniciar itens novos depois de 540 s no Claude Code (que define `CLAUDECODE=1`; dê ao comando o tempo limite de 10 min) e de 240 s nos demais ambientes; `--tempo-max S` muda esse limite.
+
 O script imprime um JSON. Conforme o `status`:
 
 - `ENTRADA_INVALIDA`: corrija a entrada pelos `erros` (ou pergunte ao usuário) e rode de novo.
 - `INCOMPLETA`: rode **o mesmo comando** de novo, até sair o resumo final. Os itens prontos não são refeitos.
-- Qualquer outro: a pesquisa terminou; o JSON impresso é o mesmo `resumo.json` da pasta.
+- Qualquer outro: a pesquisa terminou. O JSON impresso é curto: status, edição, total global, pasta e uma linha por item (nº, código, status, método, valor unitário, valor total e quantidade de alertas). O detalhe está em `resumo.json`, na pasta.
 
 Pronto quando a pasta tem `relatorio.md`, `relatorio.html`, `resultado.json` e `resumo.json`.
 
 ### 4. Apresentar o resultado
 
-A partir do `resumo.json`:
+A partir da saída do script e do `resumo.json` da pasta:
 
 1. Quadro com item, código, preços válidos, método (média ou mediana), valor unitário, valor total e situação; depois, o valor total global.
 2. Para cada item fora de `OK`, a causa e o caminho, conforme a tabela de status de `references/regras.md`. Se o usuário aceitar ampliar período, UFs ou esferas de um item, registre o desvio **com a justificativa dele** no item e rode de novo em outra pasta.
-3. Os alertas que pedem ação do usuário.
+3. Os alertas que pedem ação do usuário: os de cada item estão em `itens[].alertas` e os gerais em `alertasGerais`, ambos no `resumo.json` (a saída impressa só traz a quantidade).
 4. O lembrete de que o relatório é apoio técnico: o agente responsável revisa, verifica as condições comerciais (art. 4º) e assina.
 
 Para perguntas sobre metodologia ("por que mediana?", "por que este preço saiu?"), responda com `references/regras.md` e com os dados do item em `resultado.json` (série, descartes com motivo, quartis, CV).

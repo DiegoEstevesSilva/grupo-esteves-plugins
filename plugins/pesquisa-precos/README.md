@@ -2,7 +2,7 @@
 
 Marketplace de plugins do Claude Code do Grupo Esteves & Esteves (https://jaderesteves.com.br).
 
-## Plugin `pesquisa-precos` (versão 1.0.1)
+## Plugin `pesquisa-precos` (versão 1.1.0)
 
 Pesquisa de preços de contratações públicas (IN SEGES/ME nº 65/2021, art. 5º, II) com os dados abertos do Compras.gov.br e relatório pronto para os autos. Edição Essencial: até 5 itens por pesquisa.
 
