@@ -266,7 +266,7 @@ function parteI(L, s) {
   L.push(`- **Endpoints:** ${c.endpoints.length ? c.endpoints.map(rotuloEndpoint).join('; ') : '—'}`);
   L.push(`- **Período padrão (data da compra):** ${fmtData(c.dataInicio)} a ${fmtData(c.dataFim)}`);
   L.push(`- **Esferas:** ${listaOuTodas(c.esferas)} · **UFs:** ${listaOuTodas(c.ufs)}`);
-  L.push('- **Links das fontes:** cada preço traz o link que reproduz a consulta do registro na API de Dados Abertos (filtro por idCompra). A coluna "Item na compra" traz o número do item na contratação de origem, o mesmo da lista de itens do edital no PNCP, onde estão o preço e o fornecedor homologados.');
+  L.push('- **Links das fontes:** o link do edital no Portal Nacional de Contratações Públicas (https://pncp.gov.br) foi buscado para os preços aproveitados, pelo idCompra, no módulo de contratações da API (`/modulo-contratacoes/1.1_consultarContratacoes_PNCP_14133_Id`). Os preços descartados têm o link da consulta do registro na API, assim como as compras que não estão no PNCP (anteriores à Lei nº 14.133/2021 ou do sistema legado). A coluna "Item na compra" traz o número do item na contratação de origem, o mesmo da lista de itens do edital no PNCP, onde estão o preço e o fornecedor homologados.');
   L.push('- **Paginação:** todas as páginas de cada combinação UF × esfera (a API aceita um valor por filtro), com novas tentativas em caso de falha.');
   L.push('');
   L.push('Parâmetros que variam por item (período, UFs, esferas, unidade) e a data/hora de acesso constam da ficha de cada item (Parte II, seção 2).');
@@ -362,10 +362,10 @@ function fichaItem(L, e, i, c) {
     for (const d of e.descartados) situacao[d.registro.seq] = `descartado (${d.etapa})`;
     const pn = e.pncp;
     L.push(`${e.serieColetada.length} registros distintos (${e.totalBruto} recebidos; ${e.duplicadosRemovidos} duplicados removidos). ` +
-      (pn ? `${pn.registrosComLink} com link para o edital no PNCP; os demais (compras fora do PNCP) têm o link da consulta na API.` : 'Os links reproduzem a consulta do registro na API (filtro por idCompra).'));
+      (pn ? `O link do edital no PNCP foi buscado para os ${pn.registros} preços aproveitados: ${pn.registrosComLink} com link para o edital${pn.doCache ? ` (${pn.doCache} compra(s) conferida(s) no cache local de consultas anteriores ao PNCP)` : ''}; os descartados e as compras fora do PNCP têm o link da consulta na API.` : 'Os links reproduzem a consulta do registro na API (filtro por idCompra).'));
     L.push('');
     if (e.serieColetada.length > LIMITE_SERIE_COMPLETA) {
-      L.push(`Versão enxuta. A identificação completa de cada fonte (idCompra, modalidade, órgão, fornecedor, marca, quantidade etc.) está no arquivo resultado.json que acompanha este relatório.`);
+      L.push(`Versão enxuta. A identificação completa de cada fonte (idCompra, modalidade, órgão, fornecedor, marca, quantidade etc.) está na aba "Série coletada" da planilha anexa (coluna "Item do edital" = ${cel(i.numeroItem)}) e na saída JSON.`);
       L.push('');
       L.push(CAB_FONTES_ENXUTA);
       e.serieColetada.forEach((r) => L.push(linhaFonteEnxuta(r, situacao[r.seq] || 'aproveitado')));

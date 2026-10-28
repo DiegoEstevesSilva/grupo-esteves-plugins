@@ -23,12 +23,12 @@ Um arquivo cobre **um processo/edital com um ou mais itens**.
 | Campo | Obrigatório | Regra |
 |---|---|---|
 | `dataInicio`, `dataFim` | sim | `AAAA-MM-DD`; `dataFim` não pode ser futura. Padrão sugerido: os 12 meses anteriores à data de hoje. |
-| `itens` | sim | lista de itens (limite da edição no SKILL.md) |
+| `itens` | sim | lista de itens (até 100) |
 | `processo`, `orgao`, `objeto` | não | identificação na Parte I do relatório; peça ao usuário |
 | `ufs` | não | siglas (`["BA","SE"]`); vazio = todas |
 | `esferas` | não | `F` (federal), `E` (estadual), `M` (municipal); vazio = todas |
 | `tipoItem` | não | `material` ou `servico`, padrão para todos os itens |
-| `limiarCV`, `fatorIQR` | não | **só na edição Completa**; fração entre 0 e 1 (padrão 0.25) e número > 0 (padrão 1.5) |
+| `limiarCV`, `fatorIQR` | não | só se o usuário pedir, com justificativa; fração entre 0 e 1 (padrão 0.25) e número > 0 (padrão 1.5) |
 
 ## Campos de cada item
 

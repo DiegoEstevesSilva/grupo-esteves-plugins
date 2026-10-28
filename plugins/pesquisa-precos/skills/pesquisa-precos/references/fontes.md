@@ -8,13 +8,13 @@ API de Dados Abertos do Compras.gov.br (`https://dadosabertos.compras.gov.br`), 
 | Preços de serviços (CATSER) | `/modulo-pesquisa-preco/3_consultarServico` |
 | Catálogo de materiais | `/modulo-material/4_consultarItemMaterial` |
 | Catálogo de serviços | `/modulo-servico/6_consultarItemServico` |
-| Link do edital no PNCP (só na edição Completa) | `/modulo-contratacoes/1.1_consultarContratacoes_PNCP_14133_Id` |
+| Link do edital no PNCP | `/modulo-contratacoes/1.1_consultarContratacoes_PNCP_14133_Id` |
 
 Particularidades que o motor já trata (não precisam de ação): `idCompra` de materiais com perda de precisão numérica (lido de `idCompraItem`); `idCompra` de serviços sem o zero à esquerda; um valor por filtro de UF e de esfera; catálogo sobrecarregado que responde HTTP 400 temporário; limite de cerca de 100 requisições por minuto em todo o domínio (o motor espera o tempo pedido no 429).
 
 ## Tempo
 
-Cada item leva de 10 s a 1 min; itens com muitas compras ou muitas combinações UF × esfera (27 UFs × 3 esferas = 81 consultas) podem levar vários minutos. Na edição Completa, os links do PNCP acrescentam até 3 min por item (`--sem-pncp` dispensa essa etapa).
+Cada item leva de 10 s a 1 min; itens com muitas compras ou muitas combinações UF × esfera (27 UFs × 3 esferas = 81 consultas) podem levar vários minutos. Os links do PNCP acrescentam até 3 min por item (`--sem-pncp` dispensa essa etapa).
 
 ## Acesso de rede
 

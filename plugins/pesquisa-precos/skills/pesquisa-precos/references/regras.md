@@ -12,7 +12,7 @@ Base normativa: IN SEGES/ME nº 65/2021, art. 5º, II (contratações similares 
 6. **IQR**, uma única vez: Q1 e Q3 por interpolação linear (= `QUARTIL.INC`). Abaixo de Q1 − 1,5·IQR → inexequível; acima de Q3 + 1,5·IQR → excessivamente elevado (art. 6º, § 3º). Com menos de 4 preços não se aplica; com IQR = 0 ficam só os preços iguais à mediana.
 7. **Estimativa**: com menos de 3 preços válidos, `AMOSTRA_INSUFICIENTE` e nenhum valor automático (art. 6º, § 5º). Senão, CV (desvio padrão amostral / média) ≤ 25% → **média**; CV > 25% → **mediana** (art. 6º, § 4º). O valor unitário é arredondado a 2 casas e só então multiplicado pela quantidade.
 
-Na edição Completa, o limiar do CV (`limiarCV`) e o fator do IQR (`fatorIQR`) podem ser alterados na entrada; o relatório registra os valores usados.
+O limiar do CV (`limiarCV`) e o fator do IQR (`fatorIQR`) podem ser alterados na entrada, se o usuário pedir; o relatório registra os valores usados.
 
 ## Status de cada item
 

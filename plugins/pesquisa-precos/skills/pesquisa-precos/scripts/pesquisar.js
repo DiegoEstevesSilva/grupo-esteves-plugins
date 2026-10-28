@@ -19,8 +19,8 @@
 //                   até 10 min; 240 nos demais; 0 = sem limite). Rodar o mesmo
 //                   comando de novo continua de onde parou: os itens prontos
 //                   ficam em <saida>/itens/.
-//   --sem-pncp      (edição Completa) não busca os links dos editais no PNCP.
-//   --sem-cache     (edição Completa) não lê nem grava o cache dos links do PNCP
+//   --sem-pncp      não busca os links dos editais no PNCP.
+//   --sem-cache     não lê nem grava o cache dos links do PNCP
 //                   (PESQUISA_PRECOS_CACHE, ou pesquisa-precos/pncp-cache.json em
 //                   %LOCALAPPDATA% no Windows e em ~/.cache nos demais).
 //
@@ -34,12 +34,12 @@ const path = require('path');
 const crypto = require('crypto');
 const zlib = require('zlib');
 
-const EDICAO = JSON.parse(fs.readFileSync(path.join(__dirname, 'edicao.json'), 'utf8'));
+const SOBRE = JSON.parse(fs.readFileSync(path.join(__dirname, 'sobre.json'), 'utf8'));
 const { validarEntradas } = require('./motor/validacao.js');
 const { ENDPOINTS, identificarItem, coletarPrecos, montarUrl } = require('./motor/coleta.js');
 const P = require('./motor/pipeline.js');
 const { markdownParaHtml, escaparHtml } = require('./motor/resposta.js');
-const PNCP = EDICAO.linksPncp ? require('./motor/pncp.js') : null;
+const PNCP = require('./motor/pncp.js');
 
 const OPCOES = {
   coleta: { esperaMax429Ms: 65000 },
@@ -65,7 +65,7 @@ function criarHttp({ buscar, timeoutMs, respostas, relogio }) {
   return async function http(url) {
     const t0 = relogio();
     try {
-      const r = await buscar(url, { signal: AbortSignal.timeout(timeoutMs), headers: { accept: 'application/json', 'user-agent': `skill-pesquisa-precos/${EDICAO.versao}` } });
+      const r = await buscar(url, { signal: AbortSignal.timeout(timeoutMs), headers: { accept: 'application/json', 'user-agent': `skill-pesquisa-precos/${SOBRE.versao}` } });
       const texto = await r.text();
       let body = texto;
       try { body = JSON.parse(texto); } catch (e) { /* texto puro */ }
@@ -93,8 +93,8 @@ async function verificarAcesso(buscar) {
 }
 
 // ---------------------------------------------------------------------------
-// Cache dos links do PNCP entre pesquisas (edição Completa). consultarPncp lê e
-// completa o objeto; aqui ele é carregado de um arquivo e gravado depois de
+// Cache dos links do PNCP entre pesquisas. consultarPncp lê e
+// preenche o objeto; aqui ele é carregado de um arquivo e gravado depois de
 // cada item. Arquivo ilegível vira cache vazio; falha ao gravar não para a
 // pesquisa (o cache só poupa consultas).
 // ---------------------------------------------------------------------------
@@ -135,19 +135,6 @@ function lerEntrada(arg) {
   if (!arg) throw new ErroEntrada('informe --entrada <arquivo.json>');
   const texto = fs.existsSync(arg) ? fs.readFileSync(arg, 'utf8') : arg;
   try { return JSON.parse(texto.replace(/^﻿/, '')); } catch (e) { throw new ErroEntrada(`entrada não é um JSON válido: ${mensagemErro(e)}`); }
-}
-
-/** Regras da edição, antes da validação do motor. */
-function regrasDaEdicao(corpo) {
-  const erros = [];
-  const n = Array.isArray(corpo.itens) ? corpo.itens.length : (corpo.codigo ? 1 : 0);
-  if (n > EDICAO.maxItens) {
-    erros.push(`A edição ${EDICAO.nome} pesquisa até ${EDICAO.maxItens} itens por vez (a entrada tem ${n}). ${EDICAO.mensagemLimite || ''}`.trim());
-  }
-  if (!EDICAO.parametrosEstatisticos && (corpo.limiarCV !== undefined || corpo.fatorIQR !== undefined)) {
-    erros.push(`Na edição ${EDICAO.nome} o limiar do CV (25%) e o fator do IQR (1,5) são fixos; retire limiarCV e fatorIQR da entrada.`);
-  }
-  return erros;
 }
 
 // ---------------------------------------------------------------------------
@@ -192,7 +179,7 @@ async function pesquisarItem(atual, { http, httpPncp, dormir, cachePncp, relogio
 }
 
 // ---------------------------------------------------------------------------
-// Planilha (.xlsx) — edição Completa. A estrutura vem de montarPlanilha (a
+// Planilha (.xlsx). A estrutura vem de montarPlanilha (a
 // mesma do Google Sheets), com a memória de cálculo adaptada por
 // motor/planilha-xlsx.js (o mesmo módulo da app: cada FILTER() vira um IF
 // matricial sobre as linhas do item, que funciona em qualquer Excel e no
@@ -242,8 +229,6 @@ async function executar(corpo, o) {
   const t0 = relogio();
   const pasta = path.resolve(o.saida);
 
-  const errosEdicao = regrasDaEdicao(corpo);
-  if (errosEdicao.length) throw Object.assign(new ErroEntrada('entrada recusada'), { erros: errosEdicao });
   const v = validarEntradas(corpo, hojeBrasilia(relogio()));
   if (!v.valido) throw Object.assign(new ErroEntrada('entrada recusada'), { erros: v.erros, alertas: v.alertas });
 
@@ -264,7 +249,7 @@ async function executar(corpo, o) {
   }
 
   const itens = P.separarItens({ params: v.params, alertas: v.alertas, dataHoraPesquisa: controle.dataHoraPesquisa });
-  const usarPncp = !!PNCP && !o.semPncp;
+  const usarPncp = !o.semPncp;
   const arqCache = usarPncp && !o.semCache ? (o.arquivoCache || arquivoCachePadrao()) : null;
   const cachePncp = arqCache ? carregarCache(arqCache) : {};
   const estados = [];
@@ -278,7 +263,7 @@ async function executar(corpo, o) {
       return { incompleta: true, prontos: estados.length, total: itens.length, pasta };
     }
     log(`→ item ${atual.item.numeroItem} (${atual.item.params.codigo}): pesquisando…`);
-    const respostas = EDICAO.trilha ? [] : null;
+    const respostas = [];
     const http = criarHttp({ buscar, timeoutMs: OPCOES.timeoutColetaMs, respostas, relogio });
     const httpPncp = criarHttp({ buscar, timeoutMs: OPCOES.timeoutPncpMs, respostas, relogio });
     let estado;
@@ -287,9 +272,7 @@ async function executar(corpo, o) {
     } catch (e) {
       estado = P.estadoSemColeta(atual, 'ERRO', mensagemErro(e));
     }
-    if (respostas) {
-      fs.writeFileSync(path.join(pasta, 'itens', `${id}.respostas.jsonl.gz`), zlib.gzipSync(respostas.map((x) => JSON.stringify(x)).join('\n') + '\n'));
-    }
+    fs.writeFileSync(path.join(pasta, 'itens', `${id}.respostas.jsonl.gz`), zlib.gzipSync(respostas.map((x) => JSON.stringify(x)).join('\n') + '\n'));
     fs.writeFileSync(arqEstado, JSON.stringify(estado));
     if (arqCache) gravarCache(arqCache, cachePncp);
     novos++;
@@ -300,7 +283,7 @@ async function executar(corpo, o) {
   // Relatório, planilha e arquivos
   const saida = P.montarSaida(estados);
   const arquivos = [];
-  if (EDICAO.planilha && saida.totalRegistrosColetados > 0) {
+  if (saida.totalRegistrosColetados > 0) {
     let pl;
     try { pl = gerarPlanilha(saida, pasta); } catch (e) { pl = { gerada: false, erro: mensagemErro(e) }; }
     if (pl.gerada) {
@@ -311,25 +294,23 @@ async function executar(corpo, o) {
       saida.alertas.push(`A planilha .xlsx não foi gerada (${pl.erro}). Rode o mesmo comando de novo: os itens prontos são reaproveitados e relatório, resumo e planilha saem juntos.`);
     }
   } else {
-    saida.planilha = { gerada: false, motivo: EDICAO.planilha ? 'nenhum registro coletado' : `não incluída na edição ${EDICAO.nome}` };
+    saida.planilha = { gerada: false, motivo: 'nenhum registro coletado' };
   }
   saida.documento = null;
-  saida.edicao = { nome: EDICAO.nome, versao: EDICAO.versao };
+  saida.versao = SOBRE.versao;
 
   const json = JSON.stringify(saida, null, 1);
   fs.writeFileSync(path.join(pasta, 'resultado.json'), json);
-  arquivos.unshift({ nome: 'resultado.json', sha256: sha256(Buffer.from(json, 'utf8')), descricao: 'saída completa: série coletada, descartes com motivo, estatísticas e alertas de cada item' });
-  if (EDICAO.trilha) {
-    for (const f of fs.readdirSync(path.join(pasta, 'itens')).filter((x) => x.endsWith('.respostas.jsonl.gz')).sort()) {
-      arquivos.push({ nome: `itens/${f}`, sha256: sha256(zlib.gunzipSync(fs.readFileSync(path.join(pasta, 'itens', f)))), descricao: 'respostas brutas da API, uma por linha, cada uma com o SHA-256 do corpo' });
-    }
+  arquivos.unshift({ nome: 'resultado.json', sha256: sha256(Buffer.from(json, 'utf8')), descricao: 'saída integral: série coletada, descartes com motivo, estatísticas e alertas de cada item' });
+  for (const f of fs.readdirSync(path.join(pasta, 'itens')).filter((x) => x.endsWith('.respostas.jsonl.gz')).sort()) {
+    arquivos.push({ nome: `itens/${f}`, sha256: sha256(zlib.gunzipSync(fs.readFileSync(path.join(pasta, 'itens', f)))), descricao: 'respostas brutas da API, uma por linha, cada uma com o SHA-256 do corpo' });
   }
 
   const A = ['', '# Anexo — arquivos da pesquisa', ''];
   A.push('Arquivos entregues com este relatório (SHA-256 do conteúdo, para conferência de integridade):', '');
   for (const a of arquivos) A.push(`- \`${a.nome}\` — ${a.descricao}. SHA-256 \`${a.sha256}\``);
-  if (EDICAO.planilha && saida.planilha && saida.planilha.erro) A.push(`- Planilha .xlsx: não gerada nesta execução (${saida.planilha.erro}).`);
-  A.push('', `Relatório gerado pela Skill Pesquisa de Preços – ${EDICAO.nome} (versão ${EDICAO.versao}), do ${EDICAO.autor}. Os valores foram calculados por código determinístico a partir dos dados abertos; o modelo de IA não altera números.`);
+  if (saida.planilha && saida.planilha.erro) A.push(`- Planilha .xlsx: não gerada nesta execução (${saida.planilha.erro}).`);
+  A.push('', `Relatório gerado pela Skill ${SOBRE.nome} (versão ${SOBRE.versao}), do ${SOBRE.autor}. Os valores foram calculados por código determinístico a partir dos dados abertos; o modelo de IA não altera números.`);
   saida.relatorioMarkdown += A.join('\n') + '\n';
   fs.writeFileSync(path.join(pasta, 'relatorio.md'), saida.relatorioMarkdown);
   const titulo = `Relatório de pesquisa de preços${saida.processo && saida.processo.numero ? ` – Processo ${saida.processo.numero}` : ''}`;
@@ -337,7 +318,7 @@ async function executar(corpo, o) {
 
   const resumo = {
     status: saida.status,
-    edicao: `${EDICAO.nome} ${EDICAO.versao}`,
+    versao: SOBRE.versao,
     processo: saida.processo,
     dataHoraPesquisa: saida.dataHoraPesquisa,
     valorTotalGlobal: saida.consolidacao.valorTotalGlobal,
@@ -383,7 +364,7 @@ async function main() {
   if (a.ajuda) { console.log(fs.readFileSync(__filename, 'utf8').split('\n').slice(1, 29).map((l) => l.replace(/^\/\/ ?/, '')).join('\n')); return 0; }
   if (a.soVerificar) {
     await verificarAcesso(fetch);
-    console.log(JSON.stringify({ acesso: 'ok', api: 'https://dadosabertos.compras.gov.br', edicao: `${EDICAO.nome} ${EDICAO.versao}` }));
+    console.log(JSON.stringify({ acesso: 'ok', api: 'https://dadosabertos.compras.gov.br', versao: SOBRE.versao }));
     return 0;
   }
   const corpo = lerEntrada(a.entrada);
@@ -399,7 +380,7 @@ async function main() {
 }
 
 /**
- * O que a pesquisa concluída imprime: só o essencial, uma linha por item (para
+ * O que a pesquisa concluída imprime: só o necessário, uma linha por item (para
  * caber no contexto da IA mesmo com 100 itens). Descrições, alertas e arquivos
  * ficam em resumo.json. JSON válido.
  */
@@ -408,7 +389,7 @@ function saidaCurta(resumo) {
   const itens = resumo.itens.map((q) => `  ${j([q.numeroItem, q.codigo, q.status, q.metodo, q.valorUnitario, q.valorTotal, q.alertas.length])}`);
   return [
     '{',
-    `  "status": ${j(resumo.status)}, "edicao": ${j(resumo.edicao)}, "valorTotalGlobal": ${j(resumo.valorTotalGlobal)},`,
+    `  "status": ${j(resumo.status)}, "versao": ${j(resumo.versao)}, "valorTotalGlobal": ${j(resumo.valorTotalGlobal)},`,
     `  "pasta": ${j(resumo.pasta)},`,
     '  "detalhes": "resumo.json (descrições, alertas de cada item, alertas gerais e arquivos)",',
     '  "colunas": ["item", "codigo", "status", "metodo", "valorUnitario", "valorTotal", "alertas"],',
@@ -435,4 +416,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { executar, verificarAcesso, dadosPlanilha, regrasDaEdicao, saidaCurta, tempoMaxPadrao, args, EDICAO };
+module.exports = { executar, verificarAcesso, dadosPlanilha, saidaCurta, tempoMaxPadrao, args, SOBRE };
