@@ -1,0 +1,11 @@
+{
+  "nome": "Essencial",
+  "maxItens": 5,
+  "linksPncp": false,
+  "planilha": false,
+  "trilha": false,
+  "parametrosEstatisticos": false,
+  "mensagemLimite": "Divida a pesquisa em partes de até 5 itens. Para editais maiores, conheça a edição Completa em jaderesteves.com.br.",
+  "versao": "1.0.1",
+  "autor": "Grupo Esteves & Esteves (jaderesteves.com.br)"
+}

@@ -1,0 +1,15 @@
+{
+  "name": "grupo-esteves",
+  "description": "Plugins do Grupo Esteves & Esteves para compras públicas",
+  "owner": {
+    "name": "Grupo Esteves & Esteves",
+    "url": "https://jaderesteves.com.br"
+  },
+  "plugins": [
+    {
+      "name": "pesquisa-precos",
+      "source": "./plugins/pesquisa-precos",
+      "description": "Pesquisa de preços de contratações públicas (IN SEGES/ME nº 65/2021, art. 5º, II) com os dados abertos do Compras.gov.br e relatório pronto para os autos. Edição Essencial: até 5 itens por pesquisa."
+    }
+  ]
+}
